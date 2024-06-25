@@ -1,0 +1,91 @@
+﻿@page "/order-list"
+@using order.Models
+@inject IOrderService OrderService
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+
+<PageTitle>Order List</PageTitle>
+<table class="table">
+    <thead>
+        <tr>
+            <th>訂單編號</th>
+            <th>桌號</th>
+            <th>餐點名稱</th>
+            <th>種類</th>
+            <th>數量</th>
+            <th>總價</th>
+            <th>訂單時間</th>
+            <th>運送時間</th>
+            <th>操作</th>
+        </tr>
+    </thead>
+    <tbody>
+    @foreach (var order in orders)
+    {
+        <tr class="table-row">
+            <td>
+                @order.OrderID
+            </td>
+            <td>
+                @order.TableNumber
+            </td>
+            <td>
+                @order?.Menu?.DishName
+            </td>
+            <td>
+                @order?.Menu?.Category?.CategoryName
+            </td>
+            <td>
+                @order.Qty
+            </td>
+            <td>
+                @(order?.Menu?.Price * order.Qty)
+            </td>
+            <td>
+                @order.OrderTime
+            </td>
+            <td>
+                @order.DeliveryTime
+            </td>
+            <td>
+                <button class="btn btn-primary" @onclick="()=>DeliverOrder(order.OrderID)">出單</button>
+                <button class="btn btn-danger" @onclick="()=>DeleteOrder(order.OrderID)">刪除</button>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>
+@code {
+    public List<OrderModel> orders {get; set;} = new List<OrderModel>();
+
+    protected override void OnInitialized()
+    {
+        orders = OrderService.GetOrders();
+    }
+
+    private void DeleteOrder(int id)
+    {
+        
+        var order = OrderService.GetOrderById(id);
+        if (order != null)
+        {
+            OrderService.RemoveOrder(order);
+            StateHasChanged();
+        }
+    }
+
+    private void DeliverOrder(int id)
+    {
+        var order = OrderService.GetOrderById(id);
+        if (order != null)
+        {
+            order.DeliveryTime = ConvertToUtcPlus8(DateTime.UtcNow);
+            OrderService.UpdateOrder(order);
+            StateHasChanged();
+        }
+    }
+
+    private DateTime ConvertToUtcPlus8(DateTime utcTime)
+    {
+        return utcTime.AddHours(8);
+    }
+}

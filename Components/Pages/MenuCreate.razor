@@ -1,0 +1,55 @@
+@page "/menu-create";
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@using order.Models;
+@inject IMenuService MenuService
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<PageTitle>建立菜色</PageTitle>
+
+<div class="form-group mb-2">
+    <label for="DishName">菜名</label>
+    <input type="text" class="form-control" id="DishName" @bind="DishName" required>
+</div>
+
+<div class="form-group mb-2">
+    <label for="Price">價格</label>
+    <input type="number" class="form-control" id="Price" @bind="Price">
+</div>
+
+<div class="form-group mb-2">
+    <label for="CategoryId">選擇類別</label>
+    <select class="form-control" id="CategoryId" @bind="SelectedCategoryId">
+        @foreach (var category in Categories)
+        {
+            <option value="@category.CategoryID">@category.CategoryName</option>
+        }
+    </select>
+</div>
+
+<button class="btn btn-primary" @onclick="()=>CreateMenu()">建立</button>
+
+@code {
+    public List<CategoryModel> Categories { get; set; } = new List<CategoryModel>();
+    public int SelectedCategoryId { get; set; }
+    public string DishName { get; set; }
+    public decimal Price { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Categories = CategoryService.GetCategories();
+    }
+
+    private void CreateMenu()
+    {
+        var menu = new MenuModel
+        {
+            CategoryID = SelectedCategoryId,
+            DishName = DishName,
+            Price = Price,
+        };
+
+        MenuService.AddMenu(menu);
+        Navigation.NavigateTo("/order-list");
+    }
+}

@@ -1,0 +1,33 @@
+@page "/category-create";
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@using order.Models;
+@inject ICategoryService CategoryService
+@inject NavigationManager Navigation
+
+<PageTitle>建立總類</PageTitle>
+
+<div class="form-group mb-2">
+    <label for="CategoryName">總類</label>
+    <input type="text" class="form-control" id="CategoryName" @bind="CategoryName" required>
+</div>
+
+<button class="btn btn-primary" @onclick="()=>CreateCategory()">建立</button>
+
+@code {
+    public string CategoryName { get; set; }
+
+    protected override void OnInitialized()
+    {
+    }
+
+    private void CreateCategory()
+    {
+        var category = new CategoryModel
+        {
+            CategoryName = CategoryName,
+        };
+
+        CategoryService.AddCategory(category);
+        Navigation.NavigateTo("/order-list");
+    }
+}

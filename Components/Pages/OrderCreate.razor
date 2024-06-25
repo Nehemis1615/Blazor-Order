@@ -1,0 +1,118 @@
+﻿@page "/order-create"
+@rendermode @(new InteractiveServerRenderMode(prerender: true))
+@using order.Models
+@inject IMenuService MenuService
+@inject IOrderService OrderService
+@inject NavigationManager Navigation
+
+<PageTitle>建立訂單</PageTitle>
+
+<h1>建立訂單</h1>
+
+
+
+<div class="form-group mb-2">
+    <label for="TableNumber">桌號</label>
+    <input type="number" class="form-control" id="TableNumber" @bind="TableNumber">
+</div>
+
+<div class="form-group mb-2">
+    <label for="DishId">選擇菜色</label>
+    <select class="form-control" id="DishId" @bind="SelectedDishId" @bind:after="CalculatePrice">
+        @foreach (var menu in Menus)
+        {
+            <option value="@menu.DishID">@menu.DishName</option>
+        }
+    </select>
+</div>
+
+<div class="form-group mb-2">
+    <label for="DishPrice">菜色價格</label>
+    <input type="number" class="form-control" id="DishPrice" @bind="SelectedDishPrice" disabled>
+</div>
+
+<div class="form-group mb-2">
+    <label for="Qty">數量</label>
+    <input type="number" class="form-control" id="Qty" @bind="Qty" @bind:after="CalculatePrice">
+</div>
+
+<div class="form-group mb-2">
+    <label for="Price">價格</label>
+    <input type="number" class="form-control" id="Price" @bind="Price" disabled>
+</div>
+
+<button class="btn btn-primary" @onclick="CreateOrder">建立明細</button>
+
+<p>訂單內容</p>
+@if (Orders.Count == 0)
+{
+    <p>尚無訂單</p>
+}
+else
+{
+    @foreach (var order in Orders)
+    {
+        <CardBody>
+            <CardTitle>菜色: @order.Menu.DishName</CardTitle>
+            <CardText>數量: @order.Qty</CardText>
+            <CardText>總價: @(order.Menu.Price * order.Qty)</CardText>
+        </CardBody>
+        <br>
+    }
+}
+
+@code {
+    public List<OrderModel> Orders { get; set; } = new List<OrderModel>();
+    public List<MenuModel> Menus { get; set; } = new List<MenuModel>();
+    public int SelectedDishId { get; set; }
+    public decimal SelectedDishPrice { get; set; }
+    public decimal TableNumber { get; set; }
+    public decimal Qty { get; set; }
+    public decimal Price { get; set; }
+
+    protected override void OnInitialized()
+    {
+        Menus = MenuService.GetMenus();
+        Orders = new List<OrderModel>();
+        SelectedDishId = Menus.FirstOrDefault()?.DishID ?? 0;
+        TableNumber = 1;
+        Qty = 1;
+        CalculatePrice();
+    }
+
+    private void CreateOrder()
+    {
+        var order = new OrderModel
+        {
+            DishID = SelectedDishId,
+            Menu = Menus.FirstOrDefault(d => d.DishID == SelectedDishId),
+            Qty = Qty,
+            TableNumber = TableNumber,
+            OrderTime = ConvertToUtcPlus8(DateTime.UtcNow),
+        };
+
+        OrderService.AddOrder(order);
+        Orders.Add(order);
+        StateHasChanged();
+    }
+
+    private void CalculatePrice()
+    {
+        var selectedDish = MenuService.GetMenuById(SelectedDishId);
+        if (selectedDish != null)
+        {
+            SelectedDishPrice = selectedDish.Price;
+            Price = SelectedDishPrice * Qty;
+        }
+        else
+        {
+            SelectedDishPrice = 0;
+            Price = 0;
+        }
+    }
+
+    private DateTime ConvertToUtcPlus8(DateTime utcTime)
+    {
+        return utcTime.AddHours(8);
+    }
+}
